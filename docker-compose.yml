@@ -22,7 +22,7 @@ services:
       - db
     environment:
       - DB_HOST=db
-      - DB_USER=root
+      - DB_USER=postgres
       - DB_PASSWORD=example
       - DB_NAME=app_db
     networks:
@@ -32,14 +32,15 @@ services:
       
 
   db:
-    image: mysql:5.7
+    image: postgres:13
     environment:
-      MYSQL_ROOT_PASSWORD: example
-      MYSQL_DATABASE: app_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: app_db
     networks:
       - app-network
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data:/var/lib/postgresql/data
     deploy:
       replicas: 1
       

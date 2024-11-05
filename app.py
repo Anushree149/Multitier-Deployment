@@ -1,31 +1,57 @@
-# backend/app.py
-from flask import Flask, jsonify
-import os
-import mysql.connector
+version: '3.8'
 
-app = Flask(__name__)
+services:
+  frontend:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    deploy:
+      replicas: 1
+      
+    configs:
+      - source: nginx_conf
+        target: /etc/nginx/nginx.conf
 
-# Database configuration
-db_config = {
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', 'example'),
-    'host': os.getenv('DB_HOST', 'db'),
-    'database': os.getenv('DB_NAME', 'app_db')
-}
+  backend:
+    image: my-flask-backend:latest  # Replace with your backend image
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_USER=postgres
+      - DB_PASSWORD=example
+      - DB_NAME=app_db
+    networks:
+      - app-network
+    deploy:
+      replicas: 1
+      
 
-@app.route('/')
-def index():
-    return jsonify(message="Welcome to the Flask backend!")
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: app_db
+    networks:
+      - app-network
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    deploy:
+      replicas: 1
+      
+          
 
-@app.route('/data')
-def get_data():
-    # Connect to the database
-    connection = mysql.connector.connect(**db_config)
-    cursor = connection.cursor()
-    cursor.execute("SELECT 'Hello, Docker Swarm!' AS message;")
-    result = cursor.fetchone()
-    connection.close()
-    return jsonify(message=result[0])
+networks:
+  app-network:
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+volumes:
+  db_data:
+
+configs:
+  nginx_conf:
+    file: ./nginx.conf
