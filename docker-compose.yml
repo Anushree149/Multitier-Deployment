@@ -17,7 +17,7 @@ services:
         target: /etc/nginx/nginx.conf
 
   backend:
-    image: my-flask-backend:latest  # Replace with your backend image
+    image: my-flask-backend-pg:latest  # Replace with your backend image
     depends_on:
       - db
     environment:

@@ -1,57 +1,31 @@
-version: '3.8'
+# backend/app.py
+from flask import Flask, jsonify
+import os
+import psycopg2
 
-services:
-  frontend:
-    image: nginx:latest
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - app-network
-    deploy:
-      replicas: 1
-      
-    configs:
-      - source: nginx_conf
-        target: /etc/nginx/nginx.conf
+app = Flask(__name__)
 
-  backend:
-    image: my-flask-backend:latest  # Replace with your backend image
-    depends_on:
-      - db
-    environment:
-      - DB_HOST=db
-      - DB_USER=postgres
-      - DB_PASSWORD=example
-      - DB_NAME=app_db
-    networks:
-      - app-network
-    deploy:
-      replicas: 1
-      
+# Database configuration
+db_config = {
+    'dbname': os.getenv('DB_NAME', 'app_db'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD', 'example'),
+    'host': os.getenv('DB_HOST', 'db')
+}
 
-  db:
-    image: postgres:13
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: example
-      POSTGRES_DB: app_db
-    networks:
-      - app-network
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    deploy:
-      replicas: 1
-      
-          
+@app.route('/')
+def index():
+    return jsonify(message="Welcome to the Flask backend!")
 
-networks:
-  app-network:
+@app.route('/data')
+def get_data():
+    # Connect to the PostgreSQL database
+    connection = psycopg2.connect(**db_config)
+    cursor = connection.cursor()
+    cursor.execute("SELECT 'Hello, Docker Swarm with PostgreSQL!' AS message;")
+    result = cursor.fetchone()
+    connection.close()
+    return jsonify(message=result[0])
 
-volumes:
-  db_data:
-
-configs:
-  nginx_conf:
-    file: ./nginx.conf
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
